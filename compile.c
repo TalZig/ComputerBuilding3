@@ -6,7 +6,6 @@
 #include "switch.c"
 #include <string.h>
 char *assemblyOfThatString(char *);
-void returnRowInAssembly(char **str);
 #define MAXCHAR 1000
 typedef struct {
   int valOfCase;
@@ -95,6 +94,7 @@ void insertInformationToFile(FILE *file, Case *cases, int arrSize) {
     // else
     //fprintf(file,".quad .L%d\n", amountOfCases);
   }
+  fprintf(file, ".quad .L%d\n", numOfCaseInTheJumpTable + 1);
 }
 char *removeCharFromString(char *str, char ch) {
   int i, j;
@@ -139,17 +139,18 @@ char *assemblyOfThatString(char *stringToCheck) {
     return temp;
   }
 }
-void returnRowInAssembly(char **str) {
+void returnRowInAssembly(char **str, Case *assemblyField) {
   char *temp1 = (char *) malloc(50);
-  char *temp2 = (char *) malloc(50);
+  char *temp2;
   char *temp3 = (char *) malloc(50);
   removeCharFromString(*str, ' ');
   if (strstr(*str, "<<=") != NULL) {
     temp1 = strtok(*str, "<<=");
     temp2 = temp1 + strlen(temp1) + 3;
     strtok(temp2, ";");
-    strcpy(temp3, "salq ");
+    strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
+    *str = strcat(*str, ", %%edx\nsalq %%edx");
     *str = strcat(*str, ", ");
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
@@ -157,8 +158,10 @@ void returnRowInAssembly(char **str) {
     temp1 = strtok(*str, ">>=");
     temp2 = temp1 + strlen(temp1) + 3;
     strtok(temp2, ";");
-    strcpy(temp3, "sarq ");
+    strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
+    *str = strcat(*str, ", %%edx\nsarq %%edx");
+
     *str = strcat(*str, ", ");
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
@@ -166,8 +169,9 @@ void returnRowInAssembly(char **str) {
     strcpy(temp1, strtok(*str, "+="));
     temp2 = *str + strlen(temp1) + 2;
     strtok(temp2, ";");
-    strcpy(temp3, "addq ");
+    strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
+    *str = strcat(*str, ", %%edx\naddq %%edx");
     strcat(*str, ", ");
     strcat(*str, assemblyOfThatString(temp1));
     strcat(*str, "\n");
@@ -175,8 +179,9 @@ void returnRowInAssembly(char **str) {
     temp1 = strtok(*str, "-=");
     temp2 = temp1 + strlen(temp1) + 2;
     strtok(temp2, ";");
-    strcpy(temp3, "subq ");
+    strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
+    *str = strcat(*str, ", %%edx\nsubq %%edx");
     *str = strcat(*str, ", ");
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
@@ -184,8 +189,9 @@ void returnRowInAssembly(char **str) {
     temp1 = strtok(*str, "*=");
     temp2 = *str + strlen(temp1) + 2;
     strtok(temp2, ";");
-    strcpy(temp3, "imuq ");
+    strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
+    *str = strcat(*str, ", %%edx\nimuq %%edx");
     *str = strcat(*str, ", ");
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
@@ -196,6 +202,7 @@ void returnRowInAssembly(char **str) {
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
+    *str = strcat(*str, ", %%edx\nmovq %%edx");
     *str = strcat(*str, ", ");
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
@@ -211,13 +218,13 @@ void makeTableStartFrom0(Case **cases, int sizeOfArr, int min) {
 void updateAssemblyFields(Case **cases, int sizeOfArr) {
   int i, j;
   char *temp = (char *) malloc(1000);
-  for ( i = 0; i < sizeOfArr; i++) {
-    for ( j = 0; j < (*cases)[i].numOfActions; j++) {
+  for (i = 0; i < sizeOfArr; i++) {
+    for (j = 0; j < (*cases)[i].numOfActions; j++) {
       strcpy(temp, (*cases)[i].actionsInCase[j]);
       if (temp[strlen(temp) - 1] == ';') {
         temp[strlen(temp) - 1] = '\0';
       }
-      returnRowInAssembly(&temp);
+      returnRowInAssembly(&temp, &((*cases)[i]));
       (*cases)[i].actionsInAssembly[j] = (char *) malloc(strlen(temp));
       strcpy((*cases)[i].actionsInAssembly[j], temp);
     }
@@ -267,7 +274,7 @@ void readFromFile(FILE *fToR, FILE *fToW) {
   fclose(fToR);
   fToR = fopen("switch.c", "r");
   cases = (Case *) malloc(sizeof(Case) * (max - min + 2));
-  for ( j = 0; j < max - min + 2; j++) {
+  for (j = 0; j < max - min + 2; j++) {
     cases[j].numOfActions = 0;
     cases[j].numOfAssActions = 0;
     cases[j].valOfCase = max + 1;
