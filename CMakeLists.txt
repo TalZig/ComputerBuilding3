@@ -3,4 +3,4 @@ project(ComputerBuilding3 C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(ComputerBuilding3 main.c test.c switch.c Compile.c)
+add_executable(ComputerBuilding3 Compile.c)
