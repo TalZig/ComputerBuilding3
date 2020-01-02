@@ -41,10 +41,12 @@ int createJumpTable(FILE *file, Case *cases, int arrSize) {
     if (cases[i].valOfCase != cases[arrSize - 1].valOfCase)
       amountOfCases++;
   }
+  //printin things before the table.
   fprintf(file, "cmpq $%d, %%rdx \n", arrSize - 2);
   fprintf(file, "ja .L%d \n", amountOfCases - 1);
   fprintf(file, "jmp *.L%d(,%%rdx,8)\n", arrSize + 3);
   int numOfCaseInTheJumpTable = 1;
+  //printing commands of the table from the assembly arrays
   for (i = 0; i < arrSize; i++) {
     cases[i].placeInJumpTable = amountOfCases;
     if (cases[i].valOfCase != cases[arrSize - 1].valOfCase) {
@@ -58,6 +60,7 @@ int createJumpTable(FILE *file, Case *cases, int arrSize) {
         fprintf(file, "jmp .L%d\n", amountOfCases);
     }
   }
+  //print the default command.
   fprintf(file, ".L%d:\n", numOfCaseInTheJumpTable);
   for (j = 0; j < cases[arrSize - 1].numOfActions; j++) {
     fprintf(file, "%s", cases[arrSize - 1].actionsInAssembly[j]);
@@ -70,15 +73,11 @@ void insertInformationToFile(FILE *file, Case *cases, int arrSize) {
   int numOfCaseInTheJumpTable = 1;
   int amountOfCases;
   int i, j;
-/*  for (int i = 0; i < arrSize; i++) {
-    if (cases[i].valOfCase == cases[arrSize - 1].valOfCase) {
-      fprintf(file, "cmpq $%d, %%rsi\n", (arrSize - 1));
-      fprintf(file, "ja .L%d", (arrSize - 1));
-    }
-  }*/
   amountOfCases = createJumpTable(file, cases, arrSize);
+  //declaration of jump table
   fprintf(file, ".section .rodata\n"
                 ".align 8\n");
+  //sort the cases because i need to know how much default i have between two cases.
   cases = bubbleSort(cases, arrSize);
   fprintf(file, ".L%d:\n", arrSize + 3);
   for (i = 0; i < arrSize; i++) {
@@ -89,16 +88,13 @@ void insertInformationToFile(FILE *file, Case *cases, int arrSize) {
         }
       }
       fprintf(file, "\t.quad .L%d\n", cases[i].placeInJumpTable);
-/*      for (int j = 1; j < cases[i + 1].valOfCase - cases[i].valOfCase; j++)
-        fprintf(file, ".quad .L%d\n", amountOfCases);*/
       numOfCaseInTheJumpTable++;
       temp = cases[i].valOfCase;
     }
-    // else
-    //fprintf(file,".quad .L%d\n", amountOfCases);
   }
   fprintf(file, "\t.quad .L%d\n", numOfCaseInTheJumpTable + 1);
 }
+//function that removing any instance of char in the string.
 char *removeCharFromString(char *str, char ch) {
   int i, j;
   for (i = 0; str[i] != '\0'; i++) {
@@ -120,12 +116,14 @@ void fillAllArray(Case **cases, int arrSize) {
     }
   }
 }
+//func that compare between argument and update min and max of the cases.
 void checkIfItsMinOrMAx(int numOfCase, int *min, int *max) {
   if (numOfCase < *min)
     *min = numOfCase;
   if (numOfCase > *max)
     *max = numOfCase;
 }
+//function that convert from string to assembly of the string.
 char *assemblyOfThatString(char *stringToCheck) {
   char *temp = (char *) malloc(50);
   if (strcmp(stringToCheck, "p2") == 0) {
@@ -148,6 +146,7 @@ char *assemblyOfThatString(char *stringToCheck) {
     return temp;
   }
 }
+//function that for any case of operator returns the assembly command.
 void returnRowInAssembly(char **str, Case *assemblyField) {
   char *temp1 = (char *) malloc(50);
   char *temp2;
@@ -217,6 +216,7 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
     *str = strcat(*str, "\n");
   }
 }
+//initialize the table to start from 0.
 void makeTableStartFrom0(Case **cases, int sizeOfArr, int min) {
   //make the table start from 0.
   int i;
@@ -224,6 +224,7 @@ void makeTableStartFrom0(Case **cases, int sizeOfArr, int min) {
     (*cases)[i].valOfCase -= min;
   }
 }
+//function that update the assembly field in any cell in the array.
 void updateAssemblyFields(Case **cases, int sizeOfArr) {
   int i, j;
   char *temp = (char *) malloc(1000);
@@ -239,6 +240,7 @@ void updateAssemblyFields(Case **cases, int sizeOfArr) {
     }
   }
 }
+//function that read from the file and play the other functions.
 void readFromFile(FILE *fToR, FILE *fToW) {
   Case *cases = NULL;
   int numOfCases = 0;
@@ -253,6 +255,7 @@ void readFromFile(FILE *fToR, FILE *fToW) {
   int flag = 0;
   char *str = (char *) malloc(MAXCHAR);
   fToW = fopen("switch.s", "w");
+  //the opening of the assembly file.
   fprintf(fToW, ".section .text\n"
                 ".globl switch2\n"
                 "switch2:\n"
@@ -264,28 +267,28 @@ void readFromFile(FILE *fToR, FILE *fToW) {
     exit(2);
   }
   while (fgets(str, MAXCHAR, fToR) != NULL) {
-    //check for the first vision of "case"
+    //get only cases value to find the max and min case.
     if (strstr(str, "case") != NULL) {
       temp = strtok(str, " ");
       temp = strtok(NULL, " ");
       temp = strtok(temp, ":");
       numOfCase = atoi(temp);
+      //put the first value in min.
       if (!flagForInit) {
         flagForInit = 1;
         min = numOfCase;
       }
+      //func that update the values of min and max.
       checkIfItsMinOrMAx(numOfCase, &min, &max);
     }
   }
   fprintf(fToW, "subq $%d, %%rdx\n", min);
   arrSize = max - min + 2;
-  /*fprintf(fToW, "cmpq $%d, %%rdx \n", arrSize);*/
-/*  fprintf(fToW, "ja. L%d \n", arrSize);
-
-  fprintf(fToW, "jmp *.L%d(,%%rdx,8)\n", arrSize + 3);*/
   fclose(fToR);
   fToR = fopen("switch.c", "r");
+  //malloc to the array of the cases.
   cases = (Case *) malloc(sizeof(Case) * (max - min + 2));
+  //initialize the cases array.
   for (j = 0; j < max - min + 2; j++) {
     cases[j].numOfActions = 0;
     cases[j].numOfAssActions = 0;
@@ -300,8 +303,9 @@ void readFromFile(FILE *fToR, FILE *fToW) {
       flag = 1;
     }
     //temp = "";
-    //what to do when i see "case"
+    //what to do after i saw "case"
     if (flag) {
+      //case of case.
       if (strstr(str, "case") != NULL) {
         i++;
         //cases = (Case *) realloc(cases, numOfCases * sizeof(Case) + 1);
@@ -323,6 +327,7 @@ void readFromFile(FILE *fToR, FILE *fToW) {
       } else if (strstr(str, "}") != NULL) {
         break;
       } else {
+        //check if i was in the default yet or not.
         if (defaultFlag == 0) {
           cases[i].actionsInCase[cases[i].numOfActions] = (char *) malloc(strlen(str) + 1);
           strcpy(cases[i].actionsInCase[cases[i].numOfActions], str);
