@@ -41,7 +41,7 @@ int createJumpTable(FILE *file, Case *cases, int arrSize) {
     if (cases[i].valOfCase != cases[arrSize - 1].valOfCase)
       amountOfCases++;
   }
-  fprintf(file, "cmpq $%d, %%rdx \n", amountOfCases - 1);
+  fprintf(file, "cmpq $%d, %%rdx \n", arrSize - 2);
   fprintf(file, "ja .L%d \n", amountOfCases - 1);
   fprintf(file, "jmp *.L%d(,%%rdx,8)\n", arrSize + 3);
   int numOfCaseInTheJumpTable = 1;
