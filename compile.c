@@ -267,7 +267,7 @@ void readFromFile(FILE *fToR, FILE *fToW) {
   fclose(fToR);
   fToR = fopen("switch.c", "r");
   cases = (Case *) malloc(sizeof(Case) * (max - min + 2));
-  for ( j = 0; i < max - min + 2; i++) {
+  for ( j = 0; j < max - min + 2; j++) {
     cases[j].numOfActions = 0;
     cases[j].numOfAssActions = 0;
     cases[j].valOfCase = max + 1;
