@@ -41,6 +41,9 @@ int createJumpTable(FILE *file, Case *cases, int arrSize) {
     if (cases[i].valOfCase != cases[arrSize - 1].valOfCase)
       amountOfCases++;
   }
+  fprintf(file, "cmpq $%d, %%rdx \n", amountOfCases - 1);
+  fprintf(file, "ja .L%d \n", amountOfCases - 1);
+  fprintf(file, "jmp *.L%d(,%%rdx,8)\n", arrSize + 3);
   int numOfCaseInTheJumpTable = 1;
   for (i = 0; i < arrSize; i++) {
     cases[i].placeInJumpTable = amountOfCases;
@@ -82,10 +85,10 @@ void insertInformationToFile(FILE *file, Case *cases, int arrSize) {
     if (cases[i].valOfCase != cases[arrSize - 1].valOfCase) {
       if (temp != -1) {
         for (j = 1; j < cases[i].valOfCase - temp; ++j) {
-          fprintf(file, ".quad .L%d\n", amountOfCases - 1);
+          fprintf(file, "\t.quad .L%d\n", amountOfCases - 1);
         }
       }
-      fprintf(file, ".quad .L%d\n", cases[i].placeInJumpTable);
+      fprintf(file, "\t.quad .L%d\n", cases[i].placeInJumpTable);
 /*      for (int j = 1; j < cases[i + 1].valOfCase - cases[i].valOfCase; j++)
         fprintf(file, ".quad .L%d\n", amountOfCases);*/
       numOfCaseInTheJumpTable++;
@@ -94,7 +97,7 @@ void insertInformationToFile(FILE *file, Case *cases, int arrSize) {
     // else
     //fprintf(file,".quad .L%d\n", amountOfCases);
   }
-  fprintf(file, ".quad .L%d\n", numOfCaseInTheJumpTable + 1);
+  fprintf(file, "\t.quad .L%d\n", numOfCaseInTheJumpTable + 1);
 }
 char *removeCharFromString(char *str, char ch) {
   int i, j;
@@ -125,14 +128,20 @@ void checkIfItsMinOrMAx(int numOfCase, int *min, int *max) {
 }
 char *assemblyOfThatString(char *stringToCheck) {
   char *temp = (char *) malloc(50);
+  if (strcmp(stringToCheck, "p2") == 0) {
+    return "%rsi";
+  }
+  if (strcmp(stringToCheck, "p1") == 0) {
+    return "%rdi";
+  }
   if (strcmp(stringToCheck, "*p2") == 0) {
-    return "%%rsi";
+    return "(%rsi)";
   }
   if (strcmp(stringToCheck, "*p1") == 0) {
-    return "%%rdi";
+    return "(%rdi)";
   }
   if (strcmp(stringToCheck, "result") == 0) {
-    return "%%rax";
+    return "%rax";
   } else {
     strcpy(temp, "$");
     strcat(temp, stringToCheck);
@@ -150,7 +159,7 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
-    *str = strcat(*str, ", %%edx\nsalq %%edx");
+    *str = strcat(*str, ", %rcx\nshlq %cl");
     *str = strcat(*str, ", ");
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
@@ -160,7 +169,7 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
-    *str = strcat(*str, ", %%edx\nsarq %%edx");
+    *str = strcat(*str, ", %rcx\nsarq %cl");
 
     *str = strcat(*str, ", ");
     *str = strcat(*str, assemblyOfThatString(temp1));
@@ -171,7 +180,7 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
-    *str = strcat(*str, ", %%edx\naddq %%edx");
+    *str = strcat(*str, ", %rbx\naddq %rbx");
     strcat(*str, ", ");
     strcat(*str, assemblyOfThatString(temp1));
     strcat(*str, "\n");
@@ -181,7 +190,7 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
-    *str = strcat(*str, ", %%edx\nsubq %%edx");
+    *str = strcat(*str, ", %rbx\nsubq %rbx");
     *str = strcat(*str, ", ");
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
@@ -191,7 +200,7 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
-    *str = strcat(*str, ", %%edx\nimuq %%edx");
+    *str = strcat(*str, ", %rbx\nimulq %rbx");
     *str = strcat(*str, ", ");
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
@@ -202,7 +211,7 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
-    *str = strcat(*str, ", %%edx\nmovq %%edx");
+    *str = strcat(*str, ", %rbx\nmovq %rbx");
     *str = strcat(*str, ", ");
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
@@ -247,7 +256,7 @@ void readFromFile(FILE *fToR, FILE *fToW) {
   fprintf(fToW, ".section .text\n"
                 ".globl switch2\n"
                 "switch2:\n"
-                "movl $0, %%rax\n");
+                "movq $0, %%rax\n");
   //reading from file
   fToR = fopen("switch.c", "r");
   if (fToR == NULL || fToW == NULL) {
@@ -268,9 +277,12 @@ void readFromFile(FILE *fToR, FILE *fToW) {
       checkIfItsMinOrMAx(numOfCase, &min, &max);
     }
   }
-  fprintf(fToW, "subq %d, %%rsi\n", min);
+  fprintf(fToW, "subq $%d, %%rdx\n", min);
   arrSize = max - min + 2;
-  fprintf(fToW, "*.L%d(,%%rsi,8)\n", arrSize + 3);
+  /*fprintf(fToW, "cmpq $%d, %%rdx \n", arrSize);*/
+/*  fprintf(fToW, "ja. L%d \n", arrSize);
+
+  fprintf(fToW, "jmp *.L%d(,%%rdx,8)\n", arrSize + 3);*/
   fclose(fToR);
   fToR = fopen("switch.c", "r");
   cases = (Case *) malloc(sizeof(Case) * (max - min + 2));
