@@ -79,6 +79,7 @@ void insertInformationToFile(FILE *file, Case *cases, int arrSize) {
                 ".align 8\n");
   //sort the cases because i need to know how much default i have between two cases.
   cases = bubbleSort(cases, arrSize);
+  //name of the jump table
   fprintf(file, ".L%d:\n", arrSize + 3);
   for (i = 0; i < arrSize; i++) {
     if (cases[i].valOfCase != cases[arrSize - 1].valOfCase) {
@@ -153,8 +154,8 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
   char *temp3 = (char *) malloc(50);
   removeCharFromString(*str, ' ');
   if (strstr(*str, "<<=") != NULL) {
-    temp1 = strtok(*str, "<<=");
-    temp2 = temp1 + strlen(temp1) + 3;
+    strcpy(temp1, strtok(*str, "<<="));
+    temp2 = *str + strlen(temp1) + 3;
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
@@ -163,8 +164,8 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
   } else if (strstr(*str, ">>=") != NULL) {
-    temp1 = strtok(*str, ">>=");
-    temp2 = temp1 + strlen(temp1) + 3;
+    strcpy(temp1, strtok(*str, ">>="));
+    temp2 = *str + strlen(temp1) + 3;
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
@@ -184,8 +185,8 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
     strcat(*str, assemblyOfThatString(temp1));
     strcat(*str, "\n");
   } else if (strstr(*str, "-=") != NULL) {
-    temp1 = strtok(*str, "-=");
-    temp2 = temp1 + strlen(temp1) + 2;
+    strcpy(temp1, strtok(*str, "-="));
+    temp2 = *str + strlen(temp1) + 2;
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
@@ -194,7 +195,7 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
   } else if (strstr(*str, "*=") != NULL) {
-    temp1 = strtok(*str, "*=");
+    strcpy(temp1, strtok(*str, "*="));
     temp2 = *str + strlen(temp1) + 2;
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
@@ -204,9 +205,8 @@ void returnRowInAssembly(char **str, Case *assemblyField) {
     *str = strcat(*str, assemblyOfThatString(temp1));
     *str = strcat(*str, "\n");
   } else if (strstr(*str, "=") != NULL) {
-    temp1 = strtok(*str, "=");
-    strtok(*str, "=");
-    temp2 = temp1 + strlen(temp1) + 1;
+    strcpy(temp1, strtok(*str, "="));
+    temp2 = *str + strlen(temp1) + 1;
     strtok(temp2, ";");
     strcpy(temp3, "movq ");
     *str = strcat(temp3, assemblyOfThatString(temp2));
